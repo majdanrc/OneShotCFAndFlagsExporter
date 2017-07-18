@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,12 @@ namespace OneShotCFAndFlagsExporter
     {
         static void Main(string[] args)
         {
+            var rows = CFAndFlagRepository.GetRows();
+
+            foreach (var row in rows)
+            {
+                Console.WriteLine(row.ClientName);
+            }
         }
     }
 }
