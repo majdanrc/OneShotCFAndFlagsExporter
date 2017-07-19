@@ -12,30 +12,30 @@ namespace DAL.Blocks
         {
             get
             {
-                return string.Join(";", _CF1List);
+                return string.Join("#;#", _CF1List);
             }
             set
             {
-                _CF1List = !string.IsNullOrWhiteSpace(value) ? value.Split(';').ToList() : new List<string>();
+                _CF1List = !string.IsNullOrWhiteSpace(value) ? value.Split(new string[] { "#;#" }, StringSplitOptions.None).ToList() : new List<string>();
             }
         }
         public string CF2s {
             get {
-                return string.Join(";", _CF2List);
+                return string.Join("#;#", _CF2List);
             }
             set {
-                _CF2List = !string.IsNullOrWhiteSpace(value) ? value.Split(';').ToList() : new List<string>();
+                _CF2List = !string.IsNullOrWhiteSpace(value) ? value.Split(new string[] { "#;#" }, StringSplitOptions.None).ToList() : new List<string>();
             }
         }
         public string Flags
         {
             get
             {
-                return string.Join(";", _flagList);
+                return string.Join("#;#", _flagList);
             }
             set
             {
-                _flagList = !string.IsNullOrWhiteSpace(value) ? value.Split(';').ToList() : new List<string>();
+                _flagList = !string.IsNullOrWhiteSpace(value) ? value.Split(new string[] { "#;#" }, StringSplitOptions.None).ToList() : new List<string>();
             }
         }
 
