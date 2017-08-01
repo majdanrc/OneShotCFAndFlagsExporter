@@ -83,9 +83,6 @@ namespace DAL.Repositories
                                 : -1,
                             ClientName = !reader.IsDBNull(reader.GetOrdinal("nameClient"))
                                 ? reader.GetString(reader.GetOrdinal("nameClient"))
-                                : string.Empty,
-                            Flags = !reader.IsDBNull(reader.GetOrdinal("FLAGs"))
-                                ? reader.GetString(reader.GetOrdinal("FLAGs"))
                                 : string.Empty
                         };
 
@@ -95,6 +92,11 @@ namespace DAL.Repositories
                         var cf2s = !reader.IsDBNull(reader.GetOrdinal("CF2s"))
                                 ? reader.GetString(reader.GetOrdinal("CF2s"))
                                 : string.Empty;
+                        var flags = !reader.IsDBNull(reader.GetOrdinal("FLAGs"))
+                            ? reader.GetString(reader.GetOrdinal("FLAGs"))
+                            : string.Empty;
+
+                        row.Flags = Regex.Replace(flags, @"^;#\s*", string.Empty, RegexOptions.Multiline);
 
                         row.CF1s = Regex.Replace(cf1s, @"^;#\s*", string.Empty, RegexOptions.Multiline);
                         row.CF2s = Regex.Replace(cf2s, @"^;#\s*", string.Empty, RegexOptions.Multiline);

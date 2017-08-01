@@ -15,7 +15,6 @@ namespace OneShotCFAndFlagsExporter
         static void Main(string[] args)
         {
             var dataRows = CFAndFlagRepository.GetRows();
-            dataRows = new List<CFAndFlag>();
 
             var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
 
@@ -65,19 +64,28 @@ namespace OneShotCFAndFlagsExporter
                 xlPackage.Save();
             }
 
-            var counts = CFAndFlagService.GetCountsPerSupplier_OPT();
+            var cpsCounts = CFAndFlagRepository.GetCFCountPerSupplier();
+            var flagCounts = CFAndFlagRepository.GetFlagCountPerSupplier();
             
-            var calculated = counts.GroupBy(c => c.ClientId).Select(gr => new
+            var cpsCalculated = cpsCounts.GroupBy(c => c.ClientId).Select(gr => new
             {
                 ClientId = gr.Key,
                 ClientName = gr.Select(cn => cn.ClientName).FirstOrDefault(),
                 MaxCF1 = gr.Max(g => g.CF1Count),
                 MaxCF2 = gr.Max(g => g.CF2Count),
                 AvgCF1 = gr.Average(g => g.CF1Count),
-                AvgCF2 = gr.Average(g => g.CF2Count),
+                AvgCF2 = gr.Average(g => g.CF2Count)
+            }).ToDictionary(k => k.ClientId, v => v);
+
+            var flagsCalculated = flagCounts.GroupBy(c => c.ClientId).Select(gr => new
+            {
+                ClientId = gr.Key,
+                ClientName = gr.Select(cn => cn.ClientName).FirstOrDefault(),
                 MaxFlags = gr.Max(g => g.FlagCount),
                 AvgFlags = gr.Average(g => g.FlagCount)
-            }).ToList();
+            }).ToDictionary(k => k.ClientId, v => v);
+
+            var clientIds = cpsCalculated.Keys.ToList().Union(flagsCalculated.Keys).ToList();
 
             var fileNameCounts = "COUNT_export_" + timestamp + ".xlsx";
 
@@ -88,29 +96,36 @@ namespace OneShotCFAndFlagsExporter
 
                 ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("counts");
 
-                foreach (var row in calculated)
+                foreach (var row in clientIds)
                 {
-                    Console.WriteLine("processing counts: " + row.ClientName);
+                    Console.WriteLine("processing counts: " + row);
 
-                    worksheet.Cells[currentRow, 1].Value = row.ClientName;
+                    var cpsRow = cpsCalculated.ContainsKey(row) ? cpsCalculated[row] : null;
+                    var flagRow = flagsCalculated.ContainsKey(row) ? flagsCalculated[row] : null;
+
+                    var clientName = cpsRow != null
+                        ? cpsRow.ClientName
+                        : (flagRow != null ? flagRow.ClientName : string.Empty);
+
+                    worksheet.Cells[currentRow, 1].Value = clientName;
 
                     worksheet.Cells[currentRow + 1, 1].Value = "Maximum Number of CF1 per supplier";
-                    worksheet.Cells[currentRow + 1, 2].Value = row.MaxCF1;
+                    worksheet.Cells[currentRow + 1, 2].Value = cpsRow?.MaxCF1 ?? 0;
 
                     worksheet.Cells[currentRow + 2, 1].Value = "Average Number of CF1 per supplier";
-                    worksheet.Cells[currentRow + 2, 2].Value = row.AvgCF1;
+                    worksheet.Cells[currentRow + 2, 2].Value = cpsRow?.AvgCF1 ?? 0;
 
                     worksheet.Cells[currentRow + 3, 1].Value = "Maximum Number of CF2 per supplier";
-                    worksheet.Cells[currentRow + 3, 2].Value = row.MaxCF2;
+                    worksheet.Cells[currentRow + 3, 2].Value = cpsRow?.MaxCF2 ?? 0;
 
                     worksheet.Cells[currentRow + 4, 1].Value = "Average Number of CF2 per supplier";
-                    worksheet.Cells[currentRow + 4, 2].Value = row.AvgCF2;
+                    worksheet.Cells[currentRow + 4, 2].Value = cpsRow?.AvgCF2 ?? 0;
 
                     worksheet.Cells[currentRow + 5, 1].Value = "Maximum Number of Flags per supplier";
-                    worksheet.Cells[currentRow + 5, 2].Value = row.MaxFlags;
+                    worksheet.Cells[currentRow + 5, 2].Value = flagRow?.MaxFlags ?? 0;
 
                     worksheet.Cells[currentRow + 6, 1].Value = "Average Number of Flags per supplier";
-                    worksheet.Cells[currentRow + 6, 2].Value = row.AvgFlags;
+                    worksheet.Cells[currentRow + 6, 2].Value = flagRow?.AvgFlags ?? 0;
 
                     currentRow += 8;
                 }
