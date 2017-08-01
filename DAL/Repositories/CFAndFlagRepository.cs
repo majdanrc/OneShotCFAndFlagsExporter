@@ -8,8 +8,7 @@ namespace DAL.Repositories
 {
     public class CFAndFlagRepository
     {
-        //private const string QuerySql = @"select * from {0} where TextData not like 'exec sp_reset_connection' and LoginName is not NULL and LoginName<>'NT SERVICE\ReportServer'";
-        private const string QuerySql = @"SELECT 
+        private const string MainQuerySql = @"SELECT 
 	                                        CL.idClient,
 	                                        CL.nameClient,
 
@@ -39,11 +38,39 @@ namespace DAL.Repositories
                                         ORDER BY nameClient
                                         ";
 
+        private const string CPSCountPerSupplierQuery = @"SELECT 
+	                                        CL.idClient,
+	                                        CL.nameClient,
+
+											CPSS.idSupplier as SupplierId,
+
+											count(case when CPSm.listCPS <> 2 then 1 else null end) as CF1Count,
+											count(case when CPSm.listCPS <> 1 then 1 else null end) as CF2Count
+
+                                        FROM Client CL
+										INNER JOIN CPS CPSm on CPSm.idClient=CL.idClient
+										INNER JOIN CPSSupplier CPSS on CPSS.idCPS=CPSm.idCPS
+										GROUP BY CL.idClient, CL.nameClient, CPSS.idSupplier
+                                        ORDER BY nameClient, SupplierId
+                            ";
+
+        private const string FlagCountPerSupplierQuery = @"SELECT 
+	                                        CL.idClient,
+	                                        CL.nameClient,
+											SPF.idSupplier as SupplierId,
+											count(SPF.idflag) as FlagCount
+									
+                                        FROM Client CL
+										INNER JOIN SupplierFlag SPF on SPF.idClient=CL.idClient
+										GROUP BY CL.idClient, CL.nameClient, SPF.idsupplier
+                                        ORDER BY nameClient, SupplierId
+                            ";
+
         public static List<CFAndFlag> GetRows()
         {
             var result = new List<CFAndFlag>();
 
-            using (var reader = DbAccess.GetReaderSimple(QuerySql))
+            using (var reader = DbAccess.GetReaderSimple(MainQuerySql))
             {
                 try
                 {
@@ -71,6 +98,85 @@ namespace DAL.Repositories
 
                         row.CF1s = Regex.Replace(cf1s, @"^;#\s*", string.Empty, RegexOptions.Multiline);
                         row.CF2s = Regex.Replace(cf2s, @"^;#\s*", string.Empty, RegexOptions.Multiline);
+
+                        result.Add(row);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    Debug.WriteLine(exc.Message);
+                }
+            }
+
+            return result;
+        }
+
+        public static List<CFAndFlagCountSupplier> GetCFCountPerSupplier()
+        {
+            var result = new List<CFAndFlagCountSupplier>();
+
+            using (var reader = DbAccess.GetReaderSimple(CPSCountPerSupplierQuery))
+            {
+                try
+                {
+                    while (reader.Read())
+                    {
+                        var row = new CFAndFlagCountSupplier
+                        {
+                            ClientId = !reader.IsDBNull(reader.GetOrdinal("idClient"))
+                                ? reader.GetInt32(reader.GetOrdinal("idClient"))
+                                : -1,
+                            ClientName = !reader.IsDBNull(reader.GetOrdinal("nameClient"))
+                                ? reader.GetString(reader.GetOrdinal("nameClient"))
+                                : string.Empty,
+                            SupplierId = !reader.IsDBNull(reader.GetOrdinal("SupplierId"))
+                                ? reader.GetInt32(reader.GetOrdinal("SupplierId"))
+                                : -1,
+                            CF1Count = !reader.IsDBNull(reader.GetOrdinal("CF1Count"))
+                                ? reader.GetInt32(reader.GetOrdinal("CF1Count"))
+                                : -1,
+                            CF2Count = !reader.IsDBNull(reader.GetOrdinal("CF2Count"))
+                                ? reader.GetInt32(reader.GetOrdinal("CF2Count"))
+                                : -1,
+                        };
+
+                        result.Add(row);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    Debug.WriteLine(exc.Message);
+                }
+            }
+
+            return result;
+        }
+
+        public static List<CFAndFlagCountSupplier> GetFlagCountPerSupplier()
+        {
+            var result = new List<CFAndFlagCountSupplier>();
+
+            using (var reader = DbAccess.GetReaderSimple(FlagCountPerSupplierQuery))
+            {
+                try
+                {
+                    while (reader.Read())
+                    {
+                        var row = new CFAndFlagCountSupplier
+                        {
+                            ClientId = !reader.IsDBNull(reader.GetOrdinal("idClient"))
+                                ? reader.GetInt32(reader.GetOrdinal("idClient"))
+                                : -1,
+                            ClientName = !reader.IsDBNull(reader.GetOrdinal("nameClient"))
+                                ? reader.GetString(reader.GetOrdinal("nameClient"))
+                                : string.Empty,
+                            SupplierId = !reader.IsDBNull(reader.GetOrdinal("SupplierId"))
+                                ? reader.GetInt32(reader.GetOrdinal("SupplierId"))
+                                : -1,
+                            FlagCount = !reader.IsDBNull(reader.GetOrdinal("FlagCount"))
+                                ? reader.GetInt32(reader.GetOrdinal("FlagCount"))
+                                : -1
+                        };
 
                         result.Add(row);
                     }
